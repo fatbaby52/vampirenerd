@@ -5,133 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vampire: The Masquerade — Companion</title>
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
     <style>
-        * {
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #151515;
-            --bg-tertiary: #1a1a1a;
-            --text-primary: #e0d5c5;
-            --text-secondary: #b0a590;
-            --accent: #8b0000;
-            --accent-dark: #4a0000;
-            --border: #2a2020;
-            --input-bg: #0f0f0f;
-            --shadow: rgba(0, 0, 0, 0.5);
+            --bg-deep: #f4efe6;
+            --bg-surface: #ebe5d9;
+            --bg-elevated: #fff9f0;
+            --bg-inset: #e8e1d4;
+            --text-primary: #2c2416;
+            --text-secondary: #5c5040;
+            --text-muted: #8a7e6c;
+            --accent: #8b7542;
+            --accent-warm: #7a6535;
+            --accent-dim: rgba(139, 117, 66, 0.1);
+            --blood: #6b1c1c;
+            --blood-bright: #8b2020;
+            --border-subtle: #d5cbba;
+            --border-strong: #bfb5a2;
+            --shadow-color: rgba(0, 0, 0, 0.08);
         }
 
         html, body {
             width: 100%;
             height: 100%;
-            font-family: 'Crimson Text', 'Palatino', serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, #0f0a08 50%, var(--bg-primary) 100%);
+            font-family: 'Libre Baskerville', 'Georgia', serif;
+            background: var(--bg-deep);
             color: var(--text-primary);
-            line-height: 1.6;
+            line-height: 1.7;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        body::before {
+        /* Subtle parchment-grain texture */
+        body::after {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image:
-                repeating-linear-gradient(
-                    0deg,
-                    rgba(255, 255, 255, 0.02) 0px,
-                    rgba(255, 255, 255, 0.02) 1px,
-                    transparent 1px,
-                    transparent 2px
-                );
+            inset: 0;
+            background: repeating-conic-gradient(var(--bg-deep) 0.00008%, transparent 0.00030%) 50% 50% / 2500px 2500px, repeating-conic-gradient(var(--bg-deep) 0.00012%, transparent 0.00025%) 50% 50% / 2500px 2500px;
+            opacity: 0.4;
             pointer-events: none;
-            z-index: 1;
-            opacity: 0.3;
+            z-index: 0;
         }
 
-        /* Main container */
+        /* Container */
         .container {
             display: flex;
+            flex-direction: column;
             width: 100%;
             height: 100%;
             position: relative;
-            z-index: 2;
-            flex-direction: column;
+            z-index: 1;
         }
 
         /* Header */
         header {
-            background: linear-gradient(to bottom, rgba(21, 21, 21, 0.95), rgba(15, 15, 15, 0.9));
-            border-bottom: 1px solid var(--border);
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+            padding: 1.6rem 2rem 1.2rem;
+            border-bottom: 1px solid var(--border-subtle);
+            background: linear-gradient(180deg, rgba(235, 229, 217, 0.98), rgba(244, 239, 230, 0.95));
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 2rem;
+            right: 2rem;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent) 20%, var(--accent) 80%, transparent);
+            opacity: 0.3;
         }
 
         .header-title {
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-size: 1.8rem;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1.6rem;
             font-weight: 700;
-            letter-spacing: 2px;
-            color: var(--accent);
+            letter-spacing: 0.15em;
+            color: var(--text-primary);
             text-transform: uppercase;
-            margin-bottom: 0.3rem;
+        }
+
+        .header-title span {
+            color: var(--accent);
         }
 
         .header-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            letter-spacing: 1px;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
             font-style: italic;
+            margin-top: 0.15rem;
         }
 
-        /* Navigation tabs */
+        /* Navigation */
         nav {
             display: flex;
-            gap: 0;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            padding: 0 1.5rem;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
         .nav-tab {
             flex: 1;
-            padding: 1rem;
+            padding: 0.9rem 1.5rem;
             text-align: center;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-size: 0.95rem;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1.05rem;
             font-weight: 600;
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            border-bottom: 2px solid transparent;
+            transition: color 0.25s ease, border-color 0.25s ease;
             user-select: none;
-            letter-spacing: 1px;
+            position: relative;
         }
 
         .nav-tab:hover {
-            color: var(--accent);
-            background: rgba(139, 0, 0, 0.05);
+            color: var(--text-secondary);
         }
 
         .nav-tab.active {
-            color: var(--accent);
+            color: var(--accent-warm);
             border-bottom-color: var(--accent);
-            background: rgba(139, 0, 0, 0.08);
         }
 
-        /* Main content */
+        .nav-tab + .nav-tab::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 25%;
+            height: 50%;
+            width: 1px;
+            background: var(--border-subtle);
+        }
+
+        /* Content */
         .content {
             flex: 1;
             display: flex;
@@ -154,8 +174,8 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            padding: 1.5rem;
-            gap: 1rem;
+            padding: 1.5rem 2rem;
+            gap: 0.75rem;
         }
 
         .chat-header {
@@ -163,82 +183,87 @@
             justify-content: space-between;
             align-items: center;
             padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
         .chat-title {
-            font-family: 'Cinzel', 'Georgia', serif;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
             font-size: 1.3rem;
-            font-weight: 600;
-            letter-spacing: 1px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--text-primary);
         }
 
-        .reset-btn, .begin-btn, .end-btn {
-            padding: 0.6rem 1.2rem;
-            background: rgba(139, 0, 0, 0.2);
-            border: 1px solid var(--accent);
-            color: var(--accent);
+        .reset-btn,
+        .begin-btn,
+        .end-btn {
+            padding: 0.55rem 1.3rem;
+            background: transparent;
+            border: 1px solid var(--border-strong);
+            color: var(--text-secondary);
             cursor: pointer;
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-            border-radius: 2px;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            transition: all 0.2s ease;
         }
 
-        .reset-btn:hover, .begin-btn:hover, .end-btn:hover {
-            background: var(--accent);
-            color: var(--bg-primary);
-            box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
+        .reset-btn:hover,
+        .begin-btn:hover,
+        .end-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-warm);
+            background: var(--accent-dim);
         }
 
-        .reset-btn:disabled, .begin-btn:disabled {
-            opacity: 0.5;
+        .reset-btn:disabled,
+        .begin-btn:disabled {
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
-        /* Messages container */
+        /* Messages */
         .messages {
             flex: 1;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            padding-right: 0.5rem;
+            gap: 1.2rem;
+            padding: 0.5rem 0;
         }
 
         .messages::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
 
         .messages::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-            border-radius: 4px;
+            background: transparent;
         }
 
         .messages::-webkit-scrollbar-thumb {
-            background: rgba(139, 0, 0, 0.3);
-            border-radius: 4px;
+            background: var(--border-strong);
+            border-radius: 3px;
         }
 
         .messages::-webkit-scrollbar-thumb:hover {
-            background: rgba(139, 0, 0, 0.5);
+            background: var(--accent);
         }
 
         .welcome-message {
-            padding: 1.5rem;
-            background: rgba(139, 0, 0, 0.08);
-            border-left: 3px solid var(--accent);
-            border-radius: 2px;
+            padding: 1.5rem 1.8rem;
+            background: var(--accent-dim);
+            border-left: 2px solid var(--accent);
             font-style: italic;
             color: var(--text-secondary);
-            animation: fadeIn 0.6s ease-out;
+            line-height: 1.8;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .message {
             display: flex;
-            animation: fadeIn 0.4s ease-out;
-            max-width: 90%;
+            animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 85%;
         }
 
         .message.user {
@@ -251,67 +276,87 @@
         }
 
         .message-bubble {
-            padding: 1rem;
-            border-radius: 2px;
+            padding: 1rem 1.3rem;
             max-width: 100%;
             word-wrap: break-word;
+            font-size: 0.95rem;
+            line-height: 1.75;
         }
 
         .message.user .message-bubble {
-            background: var(--accent);
-            color: var(--bg-primary);
-            font-weight: 500;
+            background: var(--blood);
+            color: #f4efe6;
+            border: 1px solid rgba(139, 32, 32, 0.3);
         }
 
         .message.ai .message-bubble {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
             color: var(--text-primary);
         }
 
+        .message-label {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        .message.user .message-label {
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .message.ai .message-label {
+            color: var(--accent);
+        }
+
+        /* Typing indicator */
         .typing-indicator {
             display: flex;
-            gap: 0.4rem;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 2px;
+            gap: 0.35rem;
+            padding: 1rem 1.3rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
             width: fit-content;
+            align-items: center;
         }
 
         .typing-indicator span {
-            width: 0.5rem;
-            height: 0.5rem;
+            width: 5px;
+            height: 5px;
             background: var(--accent);
             border-radius: 50%;
-            animation: typing 1.4s infinite;
+            animation: pulse 1.4s ease-in-out infinite;
         }
 
         .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
+            animation-delay: 0.15s;
         }
 
         .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
+            animation-delay: 0.3s;
         }
 
-        @keyframes typing {
-            0%, 60%, 100% {
-                opacity: 0.3;
-                transform: translateY(0);
+        @keyframes pulse {
+            0%, 80%, 100% {
+                opacity: 0.25;
+                transform: scale(1);
             }
-            30% {
+            40% {
                 opacity: 1;
-                transform: translateY(-0.3rem);
+                transform: scale(1.3);
             }
         }
 
         /* Input area */
         .input-area {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.75rem;
             padding-top: 1rem;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-subtle);
         }
 
         .input-wrapper {
@@ -321,55 +366,55 @@
 
         .message-input {
             width: 100%;
-            padding: 0.8rem;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
+            padding: 0.85rem 1rem;
+            background: var(--bg-inset);
+            border: 1px solid var(--border-subtle);
             color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.95rem;
-            border-radius: 2px;
+            font-family: 'Libre Baskerville', 'Georgia', serif;
+            font-size: 0.9rem;
+            line-height: 1.6;
             resize: none;
-            min-height: 2.5rem;
-            max-height: 6rem;
-            transition: all 0.3s ease;
+            min-height: 2.8rem;
+            max-height: 7rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .message-input:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(139, 0, 0, 0.3), inset 0 0 10px rgba(139, 0, 0, 0.1);
-            background: rgba(139, 0, 0, 0.02);
+            box-shadow: 0 0 0 1px var(--accent-dim);
         }
 
         .message-input::placeholder {
-            color: var(--text-secondary);
-            opacity: 0.7;
+            color: var(--text-muted);
+            font-style: italic;
         }
 
         .send-btn {
-            padding: 0.8rem 1.5rem;
+            padding: 0.85rem 1.6rem;
             background: var(--accent);
-            border: 1px solid var(--accent);
-            color: var(--text-primary);
+            border: none;
+            color: #fff9f0;
             cursor: pointer;
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-size: 0.9rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            border-radius: 2px;
-            transition: all 0.3s ease;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            transition: all 0.2s ease;
             align-self: flex-end;
-            min-width: 80px;
+            min-width: 85px;
         }
 
         .send-btn:hover:not(:disabled) {
-            background: #a01010;
-            box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
-            transform: translateY(-2px);
+            background: var(--accent-warm);
+        }
+
+        .send-btn:active:not(:disabled) {
+            transform: translateY(1px);
         }
 
         .send-btn:disabled {
-            opacity: 0.6;
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
@@ -378,191 +423,203 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            padding: 1.5rem;
+            padding: 1.5rem 2rem;
             gap: 1rem;
         }
 
         .mode-selector {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
+            gap: 0;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0;
         }
 
         .mode-btn {
             flex: 1;
-            padding: 0.8rem;
-            background: rgba(139, 0, 0, 0.1);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
+            padding: 0.8rem 1rem;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
             cursor: pointer;
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-size: 0.9rem;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-            border-radius: 2px;
+            letter-spacing: 0.04em;
+            transition: all 0.25s ease;
         }
 
         .mode-btn.active {
-            background: var(--accent);
-            color: var(--bg-primary);
-            border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(139, 0, 0, 0.4);
+            color: var(--accent-warm);
+            border-bottom-color: var(--accent);
+            background: var(--accent-dim);
         }
 
-        .mode-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
+        .mode-btn:hover:not(.active) {
+            color: var(--text-secondary);
         }
 
-        /* Session setup */
+        /* Setup phase */
         .setup-container {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-            padding: 2rem;
-            max-width: 500px;
-            margin: auto;
-            align-self: center;
-            justify-self: center;
+            gap: 2rem;
+            padding: 2.5rem 0;
+            max-width: 480px;
+            margin: 0 auto;
+            width: 100%;
         }
 
         .setup-title {
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-size: 1.5rem;
-            font-weight: 600;
-            letter-spacing: 1px;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
             text-align: center;
-            color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .setup-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 1px;
+            background: var(--accent);
+            margin: 0.8rem auto 0;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.6rem;
         }
 
         .form-label {
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-size: 0.95rem;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.85rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
-            color: var(--text-primary);
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            text-transform: uppercase;
         }
 
-        .form-input, .form-select, .form-textarea {
-            padding: 0.8rem;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
+        .form-input,
+        .form-select,
+        .form-textarea {
+            padding: 0.8rem 1rem;
+            background: var(--bg-inset);
+            border: 1px solid var(--border-subtle);
             color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.95rem;
-            border-radius: 2px;
-            transition: all 0.3s ease;
+            font-family: 'Libre Baskerville', 'Georgia', serif;
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease;
         }
 
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(139, 0, 0, 0.3);
-            background: rgba(139, 0, 0, 0.02);
         }
 
-        .form-select, .form-input {
+        .form-select {
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b0000' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238b7542' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 0.8rem center;
-            padding-right: 2rem;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+            cursor: pointer;
         }
 
         .form-textarea {
             resize: vertical;
-            min-height: 100px;
-            font-family: inherit;
+            min-height: 90px;
+            line-height: 1.7;
         }
 
         .player-count-display {
             display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
+            gap: 0.4rem;
         }
 
         .player-count-btn {
-            padding: 0.6rem 1rem;
-            background: rgba(139, 0, 0, 0.1);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-inset);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
             cursor: pointer;
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-size: 0.85rem;
-            border-radius: 2px;
-            transition: all 0.3s ease;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: all 0.2s ease;
         }
 
         .player-count-btn.selected {
             background: var(--accent);
-            color: var(--bg-primary);
+            color: #fff9f0;
             border-color: var(--accent);
         }
 
-        .player-count-btn:hover {
+        .player-count-btn:hover:not(.selected) {
             border-color: var(--accent);
-            color: var(--accent);
+            color: var(--accent-warm);
         }
 
         .session-info {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background: rgba(139, 0, 0, 0.08);
-            border-left: 3px solid var(--accent);
-            border-radius: 2px;
-            font-size: 0.9rem;
+            gap: 2rem;
+            padding: 0.8rem 1.2rem;
+            background: var(--accent-dim);
+            border-left: 2px solid var(--accent);
+            margin-top: 0.5rem;
         }
 
         .session-info-item {
             display: flex;
             flex-direction: column;
-            gap: 0.3rem;
+            gap: 0.15rem;
         }
 
         .session-info-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.65rem;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.12em;
         }
 
         .session-info-value {
-            font-family: 'Cinzel', 'Georgia', serif;
-            font-weight: 600;
-            color: var(--accent);
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent-warm);
         }
 
-        /* Hidden state */
+        /* Hidden */
         .hidden {
             display: none !important;
         }
 
         /* Footer */
         footer {
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border);
-            padding: 1rem;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-subtle);
+            padding: 0.8rem 2rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
             text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
         }
 
         /* Animations */
-        @keyframes fadeIn {
+        @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(0.5rem);
+                transform: translateY(8px);
             }
             to {
                 opacity: 1;
@@ -570,50 +627,81 @@
             }
         }
 
-        /* Error message */
+        /* Error */
         .error-message {
-            padding: 1rem;
-            background: rgba(139, 0, 0, 0.2);
-            border-left: 3px solid var(--accent);
-            border-radius: 2px;
-            color: #ff6b6b;
+            padding: 1rem 1.3rem;
+            background: rgba(92, 26, 26, 0.25);
+            border-left: 2px solid var(--blood-bright);
+            color: #d4766b;
         }
 
-        /* Responsive design */
+        /* Markdown formatting in messages */
+        .message-bubble strong {
+            font-weight: 700;
+        }
+
+        .message.ai .message-bubble strong {
+            color: var(--accent-warm);
+        }
+
+        .message-bubble em {
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .message.user .message-bubble em {
+            color: rgba(244, 239, 230, 0.8);
+        }
+
+        .message-bubble ul,
+        .message-bubble ol {
+            margin-left: 1.3rem;
+            margin-top: 0.5rem;
+        }
+
+        .message-bubble li {
+            margin-bottom: 0.3rem;
+        }
+
+        .message-bubble p + p {
+            margin-top: 0.6rem;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-
-            nav {
-                flex-direction: row;
-                padding: 0.5rem;
-            }
-
-            .nav-tab {
-                padding: 0.75rem 0.5rem;
-                font-size: 0.85rem;
-            }
-
-            .message {
-                max-width: 95%;
-            }
-
-            .chat-container {
-                padding: 1rem;
-            }
-
-            .setup-container {
-                padding: 1.5rem;
-                width: 90%;
-            }
-
             header {
-                padding: 1rem;
+                padding: 1.2rem 1.2rem 1rem;
+            }
+
+            header::after {
+                left: 1.2rem;
+                right: 1.2rem;
             }
 
             .header-title {
-                font-size: 1.3rem;
+                font-size: 1.2rem;
+            }
+
+            nav {
+                padding: 0;
+            }
+
+            .nav-tab {
+                padding: 0.75rem 0.75rem;
+                font-size: 0.95rem;
+            }
+
+            .message {
+                max-width: 92%;
+            }
+
+            .chat-container,
+            .storyteller-container {
+                padding: 1rem 1.2rem;
+            }
+
+            .setup-container {
+                padding: 1.5rem 0;
             }
 
             .input-area {
@@ -623,38 +711,36 @@
             .send-btn {
                 width: 100%;
             }
+
+            .session-info {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
         }
 
-        /* Markdown-style formatting */
-        .message-bubble strong {
-            color: #ff8888;
-            font-weight: 600;
-        }
+        @media (max-width: 400px) {
+            .header-title {
+                font-size: 1rem;
+                letter-spacing: 0.1em;
+            }
 
-        .message.ai .message-bubble strong {
-            color: var(--accent);
-        }
+            .header-subtitle {
+                font-size: 0.78rem;
+            }
 
-        .message-bubble em {
-            color: #d0c0b0;
-            font-style: italic;
-        }
-
-        .message-bubble ul, .message-bubble ol {
-            margin-left: 1.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .message-bubble li {
-            margin-bottom: 0.3rem;
+            .player-count-btn {
+                width: 38px;
+                height: 38px;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="header-title">Vampire: The Masquerade</div>
-            <div class="header-subtitle">Companion • Rules Oracle & Storyteller</div>
+            <div class="header-title">Vampire: <span>The Masquerade</span></div>
+            <div class="header-subtitle">Companion &mdash; Rules Oracle &amp; Storyteller</div>
         </header>
 
         <nav>
@@ -672,12 +758,12 @@
                     </div>
                     <div class="messages" id="oracle-messages">
                         <div class="welcome-message">
-                            Welcome to the Rules Oracle. Ask me anything about Vampire: The Masquerade — rules, lore, clans, disciplines, or game mechanics.
+                            Welcome to the Rules Oracle. Ask me anything about Vampire: The Masquerade &mdash; rules, lore, clans, disciplines, or game mechanics.
                         </div>
                     </div>
                     <div class="input-area">
                         <div class="input-wrapper">
-                            <textarea class="message-input" id="oracle-input" placeholder="Ask your question..."></textarea>
+                            <textarea class="message-input" id="oracle-input" placeholder="Ask your question..." rows="1"></textarea>
                         </div>
                         <button class="send-btn" id="oracle-send">Send</button>
                     </div>
@@ -687,7 +773,6 @@
             <!-- Storyteller Section -->
             <div class="section" id="storyteller-section">
                 <div class="storyteller-container">
-                    <!-- Mode selector -->
                     <div class="mode-selector">
                         <button class="mode-btn active" data-mode="ai_storyteller">AI Storyteller</button>
                         <button class="mode-btn" data-mode="st_assist">Storyteller's Assistant</button>
@@ -719,7 +804,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Optional Scenario or Setting</label>
+                            <label class="form-label">Scenario or Setting</label>
                             <textarea class="form-textarea" id="scenario-input" placeholder="Describe your scenario, setting, or any special rules..."></textarea>
                         </div>
 
@@ -727,7 +812,7 @@
                     </div>
 
                     <!-- Game phase -->
-                    <div id="game-phase" class="hidden chat-container">
+                    <div id="game-phase" class="hidden chat-container" style="padding: 0; padding-top: 0.5rem;">
                         <div class="chat-header">
                             <div>
                                 <div class="chat-title" id="game-mode-title">AI Storyteller</div>
@@ -737,7 +822,7 @@
                                         <div class="session-info-value" id="game-player-count">1</div>
                                     </div>
                                     <div class="session-info-item">
-                                        <div class="session-info-label">Session Length</div>
+                                        <div class="session-info-label">Session</div>
                                         <div class="session-info-value" id="game-session-length">Full session</div>
                                     </div>
                                 </div>
@@ -747,7 +832,7 @@
                         <div class="messages" id="storyteller-messages"></div>
                         <div class="input-area">
                             <div class="input-wrapper">
-                                <textarea class="message-input" id="storyteller-input" placeholder="What do you do?"></textarea>
+                                <textarea class="message-input" id="storyteller-input" placeholder="What do you do?" rows="1"></textarea>
                             </div>
                             <button class="send-btn" id="storyteller-send">Send</button>
                         </div>
@@ -757,19 +842,16 @@
         </div>
 
         <footer>
-            <div>Powered by the Rules Oracle • Not affiliated with White Wolf</div>
+            Powered by the Rules Oracle &middot; Not affiliated with White Wolf
         </footer>
     </div>
 
     <script>
-        // App State Management
+        // App State
         const app = {
-            // Oracle state
             oracleThreadId: null,
             oracleMessages: [],
             oracleLoading: false,
-
-            // Storyteller state
             storytellerThreadId: null,
             storytellerMessages: [],
             storytellerLoading: false,
@@ -778,24 +860,17 @@
             sessionLength: 'Full session (3-4 hours)',
             scenario: '',
             gameActive: false,
-
-            // Current tab
             currentTab: 'oracle'
         };
 
         // DOM Elements
         const elements = {
-            // Navigation
             navTabs: document.querySelectorAll('.nav-tab'),
-
-            // Oracle
             oracleSection: document.getElementById('oracle-section'),
             oracleMessages: document.getElementById('oracle-messages'),
             oracleInput: document.getElementById('oracle-input'),
             oracleSend: document.getElementById('oracle-send'),
             oracleReset: document.getElementById('oracle-reset'),
-
-            // Storyteller
             storytellerSection: document.getElementById('storyteller-section'),
             modeBtns: document.querySelectorAll('.mode-btn'),
             playerCountBtns: document.querySelectorAll('.player-count-btn'),
@@ -813,41 +888,37 @@
             gameSessionLengthEl: document.getElementById('game-session-length')
         };
 
-        // Utility: Generate thread ID
-        function generateThreadId() {
-            return 'thread_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        // Utility: Format message text (simple markdown support)
         function formatMessage(text) {
             let formatted = text
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                 .replace(/\n/g, '<br>');
-
-            // Handle bullet lists
             formatted = formatted.replace(/^• (.*)/gm, '<li>$1</li>');
             if (formatted.includes('<li>')) {
                 formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
             }
-
             return formatted;
         }
 
-        // Utility: Create message element
         function createMessageElement(text, isUser) {
             const messageEl = document.createElement('div');
             messageEl.className = `message ${isUser ? 'user' : 'ai'}`;
+
+            const labelEl = document.createElement('div');
+            labelEl.className = 'message-label';
+            labelEl.textContent = isUser ? 'You' : 'Oracle';
 
             const bubbleEl = document.createElement('div');
             bubbleEl.className = 'message-bubble';
             bubbleEl.innerHTML = formatMessage(text);
 
-            messageEl.appendChild(bubbleEl);
+            const wrapper = document.createElement('div');
+            wrapper.appendChild(labelEl);
+            wrapper.appendChild(bubbleEl);
+            messageEl.appendChild(wrapper);
             return messageEl;
         }
 
-        // Utility: Create typing indicator
         function createTypingIndicator() {
             const typing = document.createElement('div');
             typing.className = 'typing-indicator';
@@ -855,23 +926,19 @@
             return typing;
         }
 
-        // Utility: Auto-scroll to bottom
         function scrollToBottom(container) {
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 container.scrollTop = container.scrollHeight;
-            }, 0);
+            });
         }
 
         // Tab switching
         elements.navTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabName = tab.dataset.tab;
-
-                // Update active tab
                 elements.navTabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
 
-                // Update active section
                 if (tabName === 'oracle') {
                     elements.oracleSection.classList.add('active');
                     elements.storytellerSection.classList.remove('active');
@@ -881,30 +948,23 @@
                     elements.oracleSection.classList.remove('active');
                     elements.storytellerSection.classList.add('active');
                     app.currentTab = 'storyteller';
-                    if (app.gameActive) {
-                        scrollToBottom(elements.storytellerMessages);
-                    }
+                    if (app.gameActive) scrollToBottom(elements.storytellerMessages);
                 }
             });
         });
 
-        // Oracle: Send message
+        // Oracle
         async function sendOracleMessage() {
             const message = elements.oracleInput.value.trim();
             if (!message || app.oracleLoading) return;
 
-            // Thread ID will be null on first message — backend creates it
-
-            // Clear input and disable button
             elements.oracleInput.value = '';
             elements.oracleSend.disabled = true;
             app.oracleLoading = true;
 
-            // Add user message
             elements.oracleMessages.appendChild(createMessageElement(message, true));
             scrollToBottom(elements.oracleMessages);
 
-            // Add typing indicator
             const typingEl = createTypingIndicator();
             elements.oracleMessages.appendChild(typingEl);
             scrollToBottom(elements.oracleMessages);
@@ -919,25 +979,19 @@
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                 const data = await response.json();
-
-                // Remove typing indicator
                 typingEl.remove();
-
-                // Add AI response
                 elements.oracleMessages.appendChild(createMessageElement(data.response, false));
                 scrollToBottom(elements.oracleMessages);
-
                 app.oracleThreadId = data.threadId;
             } catch (error) {
                 console.error('Error:', error);
                 typingEl.remove();
-                const errorMsg = `Error: Unable to reach the Rules Oracle. Please try again.`;
-                elements.oracleMessages.appendChild(createMessageElement(errorMsg, false));
+                elements.oracleMessages.appendChild(
+                    createMessageElement('Unable to reach the Rules Oracle. Please try again.', false)
+                );
                 scrollToBottom(elements.oracleMessages);
             } finally {
                 app.oracleLoading = false;
@@ -946,20 +1000,18 @@
             }
         }
 
-        // Oracle: Reset conversation
         elements.oracleReset.addEventListener('click', () => {
             app.oracleThreadId = null;
             app.oracleMessages = [];
             elements.oracleMessages.innerHTML = `
                 <div class="welcome-message">
-                    Welcome to the Rules Oracle. Ask me anything about Vampire: The Masquerade — rules, lore, clans, disciplines, or game mechanics.
+                    Welcome to the Rules Oracle. Ask me anything about Vampire: The Masquerade &mdash; rules, lore, clans, disciplines, or game mechanics.
                 </div>
             `;
             elements.oracleInput.value = '';
             elements.oracleInput.focus();
         });
 
-        // Oracle: Send button and Enter key
         elements.oracleSend.addEventListener('click', sendOracleMessage);
         elements.oracleInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -977,7 +1029,7 @@
             });
         });
 
-        // Storyteller: Player count selection
+        // Storyteller: Player count
         elements.playerCountBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 elements.playerCountBtns.forEach(b => b.classList.remove('selected'));
@@ -986,57 +1038,48 @@
             });
         });
 
-        // Storyteller: Session length
         elements.sessionLengthSelect.addEventListener('change', (e) => {
             app.sessionLength = e.target.value;
         });
 
-        // Storyteller: Scenario input
         elements.scenarioInput.addEventListener('change', (e) => {
             app.scenario = e.target.value;
         });
 
-        // Storyteller: Begin session
+        // Begin session
         elements.beginSessionBtn.addEventListener('click', () => {
-            app.storytellerThreadId = null; // Backend creates thread on first message
+            app.storytellerThreadId = null;
             app.gameActive = true;
             app.storytellerMessages = [];
 
-            // Update game phase display
             const modeLabel = app.storytellerMode === 'ai_storyteller' ? 'AI Storyteller' : 'Storyteller\'s Assistant';
             elements.gameModeTitleEl.textContent = modeLabel;
             elements.gamePlayerCountEl.textContent = app.playerCount;
             elements.gameSessionLengthEl.textContent = app.sessionLength;
 
-            // Switch to game phase
             elements.setupPhase.classList.add('hidden');
             elements.gamePhase.classList.remove('hidden');
 
-            // Add opening message
             const openingMessage = app.storytellerMode === 'ai_storyteller'
                 ? 'The scene opens before you...'
                 : 'How can I assist you in this session?';
             elements.storytellerMessages.appendChild(createMessageElement(openingMessage, false));
-
             elements.storytellerInput.focus();
             scrollToBottom(elements.storytellerMessages);
         });
 
-        // Storyteller: Send message
+        // Storyteller: Send
         async function sendStorytellerMessage() {
             const message = elements.storytellerInput.value.trim();
             if (!message || app.storytellerLoading) return;
 
-            // Clear input and disable button
             elements.storytellerInput.value = '';
             elements.storytellerSend.disabled = true;
             app.storytellerLoading = true;
 
-            // Add user message
             elements.storytellerMessages.appendChild(createMessageElement(message, true));
             scrollToBottom(elements.storytellerMessages);
 
-            // Add typing indicator
             const typingEl = createTypingIndicator();
             elements.storytellerMessages.appendChild(typingEl);
             scrollToBottom(elements.storytellerMessages);
@@ -1055,25 +1098,19 @@
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                 const data = await response.json();
-
-                // Remove typing indicator
                 typingEl.remove();
-
-                // Add AI response
                 elements.storytellerMessages.appendChild(createMessageElement(data.response, false));
                 scrollToBottom(elements.storytellerMessages);
-
                 app.storytellerThreadId = data.threadId;
             } catch (error) {
                 console.error('Error:', error);
                 typingEl.remove();
-                const errorMsg = `Error: Unable to reach the Storyteller. Please try again.`;
-                elements.storytellerMessages.appendChild(createMessageElement(errorMsg, false));
+                elements.storytellerMessages.appendChild(
+                    createMessageElement('Unable to reach the Storyteller. Please try again.', false)
+                );
                 scrollToBottom(elements.storytellerMessages);
             } finally {
                 app.storytellerLoading = false;
@@ -1082,7 +1119,6 @@
             }
         }
 
-        // Storyteller: Send button and Enter key
         elements.storytellerSend.addEventListener('click', sendStorytellerMessage);
         elements.storytellerInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -1091,7 +1127,7 @@
             }
         });
 
-        // Storyteller: End session
+        // End session
         elements.endSessionBtn.addEventListener('click', () => {
             app.gameActive = false;
             app.storytellerThreadId = null;
@@ -1099,12 +1135,10 @@
             elements.gamePhase.classList.add('hidden');
             elements.setupPhase.classList.remove('hidden');
             elements.storytellerInput.value = '';
-
-            // Reset to first mode
+            elements.storytellerMessages.innerHTML = '';
             elements.modeBtns[0].click();
         });
 
-        // Initialize: Focus on oracle input
         elements.oracleInput.focus();
     </script>
 </body>

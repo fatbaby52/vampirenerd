@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VTM Companion - One-Click Setup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0d5c5; padding: 40px; max-width: 800px; margin: 0 auto; }
+  h1 { color: #c41e3a; margin-bottom: 8px; }
+  h2 { color: #c41e3a; margin: 24px 0 12px; font-size: 1.2em; }
+  p { margin: 8px 0; line-height: 1.6; }
+  .step { background: #0d0d1a; border: 1px solid #2a2020; border-radius: 8px; padding: 20px; margin: 16px 0; }
+  label { display: block; margin-bottom: 6px; font-weight: 600; }
+  input[type="text"], input[type="password"] { width: 100%; padding: 10px; background: #151520; color: #e0d5c5; border: 1px solid #3a3030; border-radius: 4px; font-family: monospace; font-size: 14px; }
+  button { background: #8b0000; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 16px; margin: 8px 4px 8px 0; }
+  button:hover { background: #a50000; }
+  button:disabled { background: #444; cursor: not-allowed; }
+  .log { background: #0a0a14; border: 1px solid #2a2020; border-radius: 4px; padding: 12px; margin: 12px 0; font-family: monospace; font-size: 13px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+  .success { color: #4caf50; }
+  .error { color: #f44336; }
+  .warning { color: #ff9800; }
+  .info { color: #90caf9; }
+  .result-box { background: #1a2a1a; border: 1px solid #4caf50; border-radius: 4px; padding: 16px; margin: 12px 0; font-family: monospace; }
+  .result-box code { color: #4caf50; }
+  .hidden { display: none; }
+  .file-input-wrapper { margin: 8px 0; }
+  input[type="file"] { color: #e0d5c5; }
+  small { color: #888; }
+</style>
+</head>
+<body>
+<h1>VTM Companion Setup</h1>
+<p>This page sets up your OpenAI Assistants and uploads the rulebook. Run this locally by opening this file in your browser.</p>
+
+<div class="step">
+  <h2>Step 1: API Key</h2>
+  <label for="apiKey">OpenAI API Key:</label>
+  <input type="password" id="apiKey" placeholder="sk-proj-...">
+  <small>Your key stays in your browser — never sent anywhere except OpenAI's API.</small>
+</div>
+
+<div class="step">
+  <h2>Step 2: Upload Rulebook (Optional but Recommended)</h2>
+  <p>Upload the cleaned rulebook markdown file so the AI can reference it when answering questions.</p>
+  <div class="file-input-wrapper">
+    <input type="file" id="rulebookFile" accept=".md,.txt,.pdf">
+  </div>
+  <small>Accepts .md, .txt, or .pdf files</small>
+</div>
+
+<div class="step">
+  <h2>Step 3: Create Assistants</h2>
+  <button id="setupBtn" onclick="runSetup()">Run Setup</button>
+  <button id="testBtn" onclick="testAssistants()" class="hidden">Test Assistants</button>
+  <div id="log" class="log hidden"></div>
+</div>
+
+<div id="results" class="step hidden">
+  <h2>Setup Complete!</h2>
+  <p>Add these environment variables to your Netlify site settings:</p>
+  <div class="result-box">
+    <code>OPENAI_API_KEY=<span id="resultKey"></span></code><br>
+    <code>OPENAI_ASSISTANT_ID=<span id="resultRulesId"></span></code><br>
+    <code>OPENAI_ST_ASSISTANT_ID=<span id="resultStId"></span></code>
+  </div>
+  <button onclick="copyEnvVars()">Copy All to Clipboard</button>
+  <p id="copyConfirm" class="success hidden">Copied!</p>
+</div>
+
+<script>
+const API_BASE = 'https://api.openai.com/v1';
+let rulesAssistantId = '';
+let stAssistantId = '';
+
+function log(msg, cls = '') {
+  const el = document.getElementById('log');
+  el.classList.remove('hidden');
+  const span = document.createElement('span');
+  span.className = cls;
+  span.textContent = msg + '\n';
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function apiCall(method, endpoint, body = null, extraHeaders = {}) {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'OpenAI-Beta': 'assistants=v2',
+    ...extraHeaders,
+  };
+  const opts = { method, headers };
+  if (body && !(body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  } else if (body) {
+    opts.body = body;
+  }
+  const res = await fetch(`${API_BASE}${endpoint}`, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`${res.status}: ${JSON.stringify(err)}`);
+  }
+  return res.json();
+}
+
+async function uploadFile(file) {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const form = new FormData();
+  form.append('file', file);
+  form.append('purpose', 'assistants');
+  const res = await fetch(`${API_BASE}/files`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Upload failed: ${res.status} ${JSON.stringify(err)}`);
+  }
+  return res.json();
+}
+
+async function createVectorStore(fileId) {
+  const vs = await apiCall('POST', '/vector_stores', {
+    name: 'VTM Rulebook',
+    file_ids: [fileId],
+  });
+  // Poll until ready
+  let status = vs.status;
+  while (status === 'in_progress') {
+    await new Promise(r => setTimeout(r, 2000));
+    const check = await apiCall('GET', `/vector_stores/${vs.id}`);
+    status = check.status;
+    log(`  Vector store status: ${status} (${check.file_counts?.completed || 0}/${check.file_counts?.total || 0} files)`, 'info');
+  }
+  return vs.id;
+}
+
+async function runSetup() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey || !apiKey.startsWith('sk-')) {
+    alert('Please enter a valid OpenAI API key (starts with sk-)');
+    return;
+  }
+
+  const btn = document.getElementById('setupBtn');
+  btn.disabled = true;
+  btn.textContent = 'Setting up...';
+  document.getElementById('log').innerHTML = '';
+
+  try {
+    // Test API key
+    log('Testing API key...', 'info');
+    await apiCall('GET', '/models');
+    log('API key is valid!', 'success');
+
+    let vectorStoreId = null;
+
+    // Upload rulebook if provided
+    const fileInput = document.getElementById('rulebookFile');
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      log(`Uploading rulebook: ${file.name} (${(file.size/1024).toFixed(0)}KB)...`, 'info');
+      const uploaded = await uploadFile(file);
+      log(`File uploaded: ${uploaded.id}`, 'success');
+
+      log('Creating vector store...', 'info');
+      vectorStoreId = await createVectorStore(uploaded.id);
+      log(`Vector store ready: ${vectorStoreId}`, 'success');
+    } else {
+      log('No rulebook file selected - skipping file search setup', 'warning');
+    }
+
+    // Create Rules Q&A Assistant
+    log('\nCreating Rules Q&A Assistant...', 'info');
+    const rulesBody = {
+      name: 'VTM Rules Q&A',
+      description: 'Expert on Vampire: The Masquerade Revised Edition rules',
+      instructions: `You are an expert on Vampire: The Masquerade (Revised Edition). Answer questions about game rules, lore, clans, disciplines, and mechanics using the uploaded rulebook as your primary reference. Be accurate, cite specific rules when possible, and explain concepts clearly. If something isn't covered in the rulebook, say so.\n\nWhen answering:\n- Prioritize information from the rulebook\n- Cite the specific page or section when referencing rules\n- Explain mechanics in clear, understandable terms\n- If there's ambiguity, explain multiple interpretations\n- Be friendly and encouraging to new and experienced players`,
+      model: 'gpt-4o',
+      tools: vectorStoreId ? [{ type: 'file_search' }] : [],
+    };
+    if (vectorStoreId) {
+      rulesBody.tool_resources = { file_search: { vector_store_ids: [vectorStoreId] } };
+    }
+    const rulesAssistant = await apiCall('POST', '/assistants', rulesBody);
+    rulesAssistantId = rulesAssistant.id;
+    log(`Rules Q&A Assistant: ${rulesAssistantId}`, 'success');
+
+    // Create Storyteller Assistant
+    log('\nCreating Storyteller Assistant...', 'info');
+    const stBody = {
+      name: 'VTM Storyteller',
+      description: 'Storyteller and Game Master assistant for Vampire: The Masquerade',
+      instructions: `You are an expert Storyteller for Vampire: The Masquerade (Revised Edition). You support two distinct modes:\n\n**AI Storyteller Mode:** You run the full game. Set scenes, describe environments, play all NPCs with distinct personalities, and narrate outcomes. Ask players for their actions, then resolve them using the game's rules. Track the narrative, manage tension, and create memorable moments. When starting, ask about:\n- Character details (names, clans, concepts)\n- Setting and time period\n- Tone (gritty, gothic, intrigue, horror, etc.)\n- Any specific story hooks or themes\n\n**Storyteller Assistant Mode:** You help a human Storyteller run their game. Your role is to:\n- Suggest encounter ideas and plot hooks\n- Generate NPC stats, backgrounds, and personalities\n- Look up rules on the fly and help clarify mechanics\n- Help with pacing and suggest when to escalate tension\n- Brainstorm solutions to player dilemmas\n- Manage encounter difficulty and balance\n\nIn both modes:\n- Use the rulebook as your authoritative reference for mechanics, clans, disciplines, lore\n- Maintain the gothic atmosphere of VTM\n- Encourage dramatic roleplay and character development\n- Balance challenge with fun\n- Remember important narrative details and character developments\n- Be collaborative and responsive to player agency`,
+      model: 'gpt-4o',
+      tools: vectorStoreId ? [{ type: 'file_search' }] : [],
+    };
+    if (vectorStoreId) {
+      stBody.tool_resources = { file_search: { vector_store_ids: [vectorStoreId] } };
+    }
+    const stAssistant = await apiCall('POST', '/assistants', stBody);
+    stAssistantId = stAssistant.id;
+    log(`Storyteller Assistant: ${stAssistantId}`, 'success');
+
+    // Show results
+    log('\n=== SETUP COMPLETE ===', 'success');
+    document.getElementById('resultKey').textContent = apiKey;
+    document.getElementById('resultRulesId').textContent = rulesAssistantId;
+    document.getElementById('resultStId').textContent = stAssistantId;
+    document.getElementById('results').classList.remove('hidden');
+    document.getElementById('testBtn').classList.remove('hidden');
+
+  } catch (err) {
+    log(`\nERROR: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Run Setup';
+  }
+}
+
+async function testAssistants() {
+  const btn = document.getElementById('testBtn');
+  btn.disabled = true;
+  btn.textContent = 'Testing...';
+
+  try {
+    log('\n--- Testing Rules Q&A ---', 'info');
+    const thread = await apiCall('POST', '/threads');
+    await apiCall('POST', `/threads/${thread.id}/messages`, { role: 'user', content: 'What clans are in the Camarilla?' });
+    const run = await apiCall('POST', `/threads/${thread.id}/runs`, { assistant_id: rulesAssistantId });
+
+    let status = 'queued';
+    while (status !== 'completed' && status !== 'failed') {
+      await new Promise(r => setTimeout(r, 1000));
+      const check = await apiCall('GET', `/threads/${thread.id}/runs/${run.id}`);
+      status = check.status;
+      log(`  Run status: ${status}`, 'info');
+    }
+
+    if (status === 'completed') {
+      const msgs = await apiCall('GET', `/threads/${thread.id}/messages?limit=1&order=desc`);
+      const text = msgs.data[0].content[0].text;
+      const answer = typeof text === 'string' ? text : text.value;
+      log(`Rules Q&A response: ${answer.substring(0, 200)}...`, 'success');
+    } else {
+      log('Rules Q&A test failed', 'error');
+    }
+  } catch (err) {
+    log(`Test error: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Test Assistants';
+  }
+}
+
+function copyEnvVars() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const text = `OPENAI_API_KEY=${apiKey}\nOPENAI_ASSISTANT_ID=${rulesAssistantId}\nOPENAI_ST_ASSISTANT_ID=${stAssistantId}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const el = document.getElementById('copyConfirm');
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 2000);
+  });
+}
+</script>
+</body>
+</html>

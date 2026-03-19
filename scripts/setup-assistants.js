@@ -69,17 +69,16 @@ async function uploadFile(filePath) {
   const fileBuffer = fs.readFileSync(filePath);
   const fileName = path.basename(filePath);
 
-  // Use FormData for multipart upload
-  const FormData = (await import('form-data')).default;
+  // Use Node 18+ built-in FormData and Blob
+  const blob = new Blob([fileBuffer], { type: 'application/octet-stream' });
   const form = new FormData();
-  form.append('file', fileBuffer, fileName);
+  form.append('file', blob, fileName);
   form.append('purpose', 'assistants');
 
   const response = await fetch(`${API_BASE}/files`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'OpenAI-Beta': 'assistants=v2',
     },
     body: form,
   });
