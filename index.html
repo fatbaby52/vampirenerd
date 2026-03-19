@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vampire: The Masquerade — Companion</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #151515;
+            --bg-tertiary: #1a1a1a;
+            --text-primary: #e0d5c5;
+            --text-secondary: #b0a590;
+            --accent: #8b0000;
+            --accent-dark: #4a0000;
+            --border: #2a2020;
+            --input-bg: #0f0f0f;
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Crimson Text', 'Palatino', serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0f0a08 50%, var(--bg-primary) 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.02) 0px,
+                    rgba(255, 255, 255, 0.02) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        /* Main container */
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 2;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(to bottom, rgba(21, 21, 21, 0.95), rgba(15, 15, 15, 0.9));
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .header-title {
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .header-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            font-style: italic;
+        }
+
+        /* Navigation tabs */
+        nav {
+            display: flex;
+            gap: 0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 1.5rem;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            user-select: none;
+            letter-spacing: 1px;
+        }
+
+        .nav-tab:hover {
+            color: var(--accent);
+            background: rgba(139, 0, 0, 0.05);
+        }
+
+        .nav-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: rgba(139, 0, 0, 0.08);
+        }
+
+        /* Main content */
+        .content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .section {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .section.active {
+            display: flex;
+        }
+
+        /* Chat interface */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 1.5rem;
+            gap: 1rem;
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chat-title {
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .reset-btn, .begin-btn, .end-btn {
+            padding: 0.6rem 1.2rem;
+            background: rgba(139, 0, 0, 0.2);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            cursor: pointer;
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .reset-btn:hover, .begin-btn:hover, .end-btn:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
+        }
+
+        .reset-btn:disabled, .begin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Messages container */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding-right: 0.5rem;
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: rgba(139, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 0, 0, 0.5);
+        }
+
+        .welcome-message {
+            padding: 1.5rem;
+            background: rgba(139, 0, 0, 0.08);
+            border-left: 3px solid var(--accent);
+            border-radius: 2px;
+            font-style: italic;
+            color: var(--text-secondary);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .message {
+            display: flex;
+            animation: fadeIn 0.4s ease-out;
+            max-width: 90%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+        }
+
+        .message-bubble {
+            padding: 1rem;
+            border-radius: 2px;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-weight: 500;
+        }
+
+        .message.ai .message-bubble {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 0.4rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            width: fit-content;
+        }
+
+        .typing-indicator span {
+            width: 0.5rem;
+            height: 0.5rem;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-0.3rem);
+            }
+        }
+
+        /* Input area */
+        .input-area {
+            display: flex;
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            border-radius: 2px;
+            resize: none;
+            min-height: 2.5rem;
+            max-height: 6rem;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.3), inset 0 0 10px rgba(139, 0, 0, 0.1);
+            background: rgba(139, 0, 0, 0.02);
+        }
+
+        .message-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .send-btn {
+            padding: 0.8rem 1.5rem;
+            background: var(--accent);
+            border: 1px solid var(--accent);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            align-self: flex-end;
+            min-width: 80px;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #a01010;
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Storyteller section */
+        .storyteller-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 1.5rem;
+            gap: 1rem;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 0.8rem;
+            background: rgba(139, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .mode-btn.active {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.4);
+        }
+
+        .mode-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Session setup */
+        .setup-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 500px;
+            margin: auto;
+            align-self: center;
+            justify-self: center;
+        }
+
+        .setup-title {
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-align: center;
+            color: var(--accent);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            padding: 0.8rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.3);
+            background: rgba(139, 0, 0, 0.02);
+        }
+
+        .form-select, .form-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b0000' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.8rem center;
+            padding-right: 2rem;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .player-count-display {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .player-count-btn {
+            padding: 0.6rem 1rem;
+            background: rgba(139, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 0.85rem;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .player-count-btn.selected {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        .player-count-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .session-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(139, 0, 0, 0.08);
+            border-left: 3px solid var(--accent);
+            border-radius: 2px;
+            font-size: 0.9rem;
+        }
+
+        .session-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .session-info-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .session-info-value {
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        /* Hidden state */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(0.5rem);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Error message */
+        .error-message {
+            padding: 1rem;
+            background: rgba(139, 0, 0, 0.2);
+            border-left: 3px solid var(--accent);
+            border-radius: 2px;
+            color: #ff6b6b;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            nav {
+                flex-direction: row;
+                padding: 0.5rem;
+            }
+
+            .nav-tab {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+
+            .chat-container {
+                padding: 1rem;
+            }
+
+            .setup-container {
+                padding: 1.5rem;
+                width: 90%;
+            }
+
+            header {
+                padding: 1rem;
+            }
+
+            .header-title {
+                font-size: 1.3rem;
+            }
+
+            .input-area {
+                flex-direction: column;
+            }
+
+            .send-btn {
+                width: 100%;
+            }
+        }
+
+        /* Markdown-style formatting */
+        .message-bubble strong {
+            color: #ff8888;
+            font-weight: 600;
+        }
+
+        .message.ai .message-bubble strong {
+            color: var(--accent);
+        }
+
+        .message-bubble em {
+            color: #d0c0b0;
+            font-style: italic;
+        }
+
+        .message-bubble ul, .message-bubble ol {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .message-bubble li {
+            margin-bottom: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">Vampire: The Masquerade</div>
+            <div class="header-subtitle">Companion • Rules Oracle & Storyteller</div>
+        </header>
+
+        <nav>
+            <div class="nav-tab active" data-tab="oracle">Rules Oracle</div>
+            <div class="nav-tab" data-tab="storyteller">Storyteller</div>
+        </nav>
+
+        <div class="content">
+            <!-- Rules Oracle Section -->
+            <div class="section active" id="oracle-section">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-title">Rules Oracle</div>
+                        <button class="reset-btn" id="oracle-reset">New Conversation</button>
+                    </div>
+                    <div class="messages" id="oracle-messages">
+                        <div class="welcome-message">
+                            Welcome to the Rules Oracle. Ask me anything about Vampire: The Masquerade — rules, lore, clans, disciplines, or game mechanics.
+                        </div>
+                    </div>
+                    <div class="input-area">
+                        <div class="input-wrapper">
+                            <textarea class="message-input" id="oracle-input" placeholder="Ask your question..."></textarea>
+                        </div>
+                        <button class="send-btn" id="oracle-send">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Storyteller Section -->
+            <div class="section" id="storyteller-section">
+                <div class="storyteller-container">
+                    <!-- Mode selector -->
+                    <div class="mode-selector">
+                        <button class="mode-btn active" data-mode="ai_storyteller">AI Storyteller</button>
+                        <button class="mode-btn" data-mode="st_assist">Storyteller's Assistant</button>
+                    </div>
+
+                    <!-- Setup phase -->
+                    <div id="setup-phase" class="setup-container">
+                        <div class="setup-title">Begin Your Session</div>
+
+                        <div class="form-group">
+                            <label class="form-label">Number of Players</label>
+                            <div class="player-count-display">
+                                <button class="player-count-btn selected" data-count="1">1</button>
+                                <button class="player-count-btn" data-count="2">2</button>
+                                <button class="player-count-btn" data-count="3">3</button>
+                                <button class="player-count-btn" data-count="4">4</button>
+                                <button class="player-count-btn" data-count="5">5</button>
+                                <button class="player-count-btn" data-count="6">6</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Session Length</label>
+                            <select class="form-select" id="session-length">
+                                <option value="Quick scene (30 min)">Quick scene (30 min)</option>
+                                <option value="Short session (1-2 hours)">Short session (1-2 hours)</option>
+                                <option value="Full session (3-4 hours)" selected>Full session (3-4 hours)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Optional Scenario or Setting</label>
+                            <textarea class="form-textarea" id="scenario-input" placeholder="Describe your scenario, setting, or any special rules..."></textarea>
+                        </div>
+
+                        <button class="begin-btn" id="begin-session">Begin Session</button>
+                    </div>
+
+                    <!-- Game phase -->
+                    <div id="game-phase" class="hidden chat-container">
+                        <div class="chat-header">
+                            <div>
+                                <div class="chat-title" id="game-mode-title">AI Storyteller</div>
+                                <div class="session-info">
+                                    <div class="session-info-item">
+                                        <div class="session-info-label">Players</div>
+                                        <div class="session-info-value" id="game-player-count">1</div>
+                                    </div>
+                                    <div class="session-info-item">
+                                        <div class="session-info-label">Session Length</div>
+                                        <div class="session-info-value" id="game-session-length">Full session</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="end-btn" id="end-session">End Session</button>
+                        </div>
+                        <div class="messages" id="storyteller-messages"></div>
+                        <div class="input-area">
+                            <div class="input-wrapper">
+                                <textarea class="message-input" id="storyteller-input" placeholder="What do you do?"></textarea>
+                            </div>
+                            <button class="send-btn" id="storyteller-send">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div>Powered by the Rules Oracle • Not affiliated with White Wolf</div>
+        </footer>
+    </div>
+
+    <script>
+        // App State Management
+        const app = {
+            // Oracle state
+            oracleThreadId: null,
+            oracleMessages: [],
+            oracleLoading: false,
+
+            // Storyteller state
+            storytellerThreadId: null,
+            storytellerMessages: [],
+            storytellerLoading: false,
+            storytellerMode: 'ai_storyteller',
+            playerCount: 1,
+            sessionLength: 'Full session (3-4 hours)',
+            scenario: '',
+            gameActive: false,
+
+            // Current tab
+            currentTab: 'oracle'
+        };
+
+        // DOM Elements
+        const elements = {
+            // Navigation
+            navTabs: document.querySelectorAll('.nav-tab'),
+
+            // Oracle
+            oracleSection: document.getElementById('oracle-section'),
+            oracleMessages: document.getElementById('oracle-messages'),
+            oracleInput: document.getElementById('oracle-input'),
+            oracleSend: document.getElementById('oracle-send'),
+            oracleReset: document.getElementById('oracle-reset'),
+
+            // Storyteller
+            storytellerSection: document.getElementById('storyteller-section'),
+            modeBtns: document.querySelectorAll('.mode-btn'),
+            playerCountBtns: document.querySelectorAll('.player-count-btn'),
+            sessionLengthSelect: document.getElementById('session-length'),
+            scenarioInput: document.getElementById('scenario-input'),
+            beginSessionBtn: document.getElementById('begin-session'),
+            setupPhase: document.getElementById('setup-phase'),
+            gamePhase: document.getElementById('game-phase'),
+            storytellerMessages: document.getElementById('storyteller-messages'),
+            storytellerInput: document.getElementById('storyteller-input'),
+            storytellerSend: document.getElementById('storyteller-send'),
+            endSessionBtn: document.getElementById('end-session'),
+            gameModeTitleEl: document.getElementById('game-mode-title'),
+            gamePlayerCountEl: document.getElementById('game-player-count'),
+            gameSessionLengthEl: document.getElementById('game-session-length')
+        };
+
+        // Utility: Generate thread ID
+        function generateThreadId() {
+            return 'thread_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Utility: Format message text (simple markdown support)
+        function formatMessage(text) {
+            let formatted = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+
+            // Handle bullet lists
+            formatted = formatted.replace(/^• (.*)/gm, '<li>$1</li>');
+            if (formatted.includes('<li>')) {
+                formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            }
+
+            return formatted;
+        }
+
+        // Utility: Create message element
+        function createMessageElement(text, isUser) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${isUser ? 'user' : 'ai'}`;
+
+            const bubbleEl = document.createElement('div');
+            bubbleEl.className = 'message-bubble';
+            bubbleEl.innerHTML = formatMessage(text);
+
+            messageEl.appendChild(bubbleEl);
+            return messageEl;
+        }
+
+        // Utility: Create typing indicator
+        function createTypingIndicator() {
+            const typing = document.createElement('div');
+            typing.className = 'typing-indicator';
+            typing.innerHTML = '<span></span><span></span><span></span>';
+            return typing;
+        }
+
+        // Utility: Auto-scroll to bottom
+        function scrollToBottom(container) {
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 0);
+        }
+
+        // Tab switching
+        elements.navTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+
+                // Update active tab
+                elements.navTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // Update active section
+                if (tabName === 'oracle') {
+                    elements.oracleSection.classList.add('active');
+                    elements.storytellerSection.classList.remove('active');
+                    app.currentTab = 'oracle';
+                    scrollToBottom(elements.oracleMessages);
+                } else {
+                    elements.oracleSection.classList.remove('active');
+                    elements.storytellerSection.classList.add('active');
+                    app.currentTab = 'storyteller';
+                    if (app.gameActive) {
+                        scrollToBottom(elements.storytellerMessages);
+                    }
+                }
+            });
+        });
+
+        // Oracle: Send message
+        async function sendOracleMessage() {
+            const message = elements.oracleInput.value.trim();
+            if (!message || app.oracleLoading) return;
+
+            // Initialize thread on first message
+            if (!app.oracleThreadId) {
+                app.oracleThreadId = generateThreadId();
+            }
+
+            // Clear input and disable button
+            elements.oracleInput.value = '';
+            elements.oracleSend.disabled = true;
+            app.oracleLoading = true;
+
+            // Add user message
+            elements.oracleMessages.appendChild(createMessageElement(message, true));
+            scrollToBottom(elements.oracleMessages);
+
+            // Add typing indicator
+            const typingEl = createTypingIndicator();
+            elements.oracleMessages.appendChild(typingEl);
+            scrollToBottom(elements.oracleMessages);
+
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        threadId: app.oracleThreadId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Remove typing indicator
+                typingEl.remove();
+
+                // Add AI response
+                elements.oracleMessages.appendChild(createMessageElement(data.response, false));
+                scrollToBottom(elements.oracleMessages);
+
+                app.oracleThreadId = data.threadId;
+            } catch (error) {
+                console.error('Error:', error);
+                typingEl.remove();
+                const errorMsg = `Error: Unable to reach the Rules Oracle. Please try again.`;
+                elements.oracleMessages.appendChild(createMessageElement(errorMsg, false));
+                scrollToBottom(elements.oracleMessages);
+            } finally {
+                app.oracleLoading = false;
+                elements.oracleSend.disabled = false;
+                elements.oracleInput.focus();
+            }
+        }
+
+        // Oracle: Reset conversation
+        elements.oracleReset.addEventListener('click', () => {
+            app.oracleThreadId = null;
+            app.oracleMessages = [];
+            elements.oracleMessages.innerHTML = `
+                <div class="welcome-message">
+                    Welcome to the Rules Oracle. Ask me anything about Vampire: The Masquerade — rules, lore, clans, disciplines, or game mechanics.
+                </div>
+            `;
+            elements.oracleInput.value = '';
+            elements.oracleInput.focus();
+        });
+
+        // Oracle: Send button and Enter key
+        elements.oracleSend.addEventListener('click', sendOracleMessage);
+        elements.oracleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendOracleMessage();
+            }
+        });
+
+        // Storyteller: Mode switching
+        elements.modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.modeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                app.storytellerMode = btn.dataset.mode;
+            });
+        });
+
+        // Storyteller: Player count selection
+        elements.playerCountBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.playerCountBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                app.playerCount = parseInt(btn.dataset.count);
+            });
+        });
+
+        // Storyteller: Session length
+        elements.sessionLengthSelect.addEventListener('change', (e) => {
+            app.sessionLength = e.target.value;
+        });
+
+        // Storyteller: Scenario input
+        elements.scenarioInput.addEventListener('change', (e) => {
+            app.scenario = e.target.value;
+        });
+
+        // Storyteller: Begin session
+        elements.beginSessionBtn.addEventListener('click', () => {
+            app.storytellerThreadId = generateThreadId();
+            app.gameActive = true;
+            app.storytellerMessages = [];
+
+            // Update game phase display
+            const modeLabel = app.storytellerMode === 'ai_storyteller' ? 'AI Storyteller' : 'Storyteller\'s Assistant';
+            elements.gameModeTitleEl.textContent = modeLabel;
+            elements.gamePlayerCountEl.textContent = app.playerCount;
+            elements.gameSessionLengthEl.textContent = app.sessionLength;
+
+            // Switch to game phase
+            elements.setupPhase.classList.add('hidden');
+            elements.gamePhase.classList.remove('hidden');
+
+            // Add opening message
+            const openingMessage = app.storytellerMode === 'ai_storyteller'
+                ? 'The scene opens before you...'
+                : 'How can I assist you in this session?';
+            elements.storytellerMessages.appendChild(createMessageElement(openingMessage, false));
+
+            elements.storytellerInput.focus();
+            scrollToBottom(elements.storytellerMessages);
+        });
+
+        // Storyteller: Send message
+        async function sendStorytellerMessage() {
+            const message = elements.storytellerInput.value.trim();
+            if (!message || app.storytellerLoading) return;
+
+            // Clear input and disable button
+            elements.storytellerInput.value = '';
+            elements.storytellerSend.disabled = true;
+            app.storytellerLoading = true;
+
+            // Add user message
+            elements.storytellerMessages.appendChild(createMessageElement(message, true));
+            scrollToBottom(elements.storytellerMessages);
+
+            // Add typing indicator
+            const typingEl = createTypingIndicator();
+            elements.storytellerMessages.appendChild(typingEl);
+            scrollToBottom(elements.storytellerMessages);
+
+            try {
+                const response = await fetch('/.netlify/functions/storyteller', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        threadId: app.storytellerThreadId,
+                        mode: app.storytellerMode,
+                        playerCount: app.playerCount,
+                        sessionLength: app.sessionLength,
+                        scenario: app.scenario
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Remove typing indicator
+                typingEl.remove();
+
+                // Add AI response
+                elements.storytellerMessages.appendChild(createMessageElement(data.response, false));
+                scrollToBottom(elements.storytellerMessages);
+
+                app.storytellerThreadId = data.threadId;
+            } catch (error) {
+                console.error('Error:', error);
+                typingEl.remove();
+                const errorMsg = `Error: Unable to reach the Storyteller. Please try again.`;
+                elements.storytellerMessages.appendChild(createMessageElement(errorMsg, false));
+                scrollToBottom(elements.storytellerMessages);
+            } finally {
+                app.storytellerLoading = false;
+                elements.storytellerSend.disabled = false;
+                elements.storytellerInput.focus();
+            }
+        }
+
+        // Storyteller: Send button and Enter key
+        elements.storytellerSend.addEventListener('click', sendStorytellerMessage);
+        elements.storytellerInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendStorytellerMessage();
+            }
+        });
+
+        // Storyteller: End session
+        elements.endSessionBtn.addEventListener('click', () => {
+            app.gameActive = false;
+            app.storytellerThreadId = null;
+            app.storytellerMessages = [];
+            elements.gamePhase.classList.add('hidden');
+            elements.setupPhase.classList.remove('hidden');
+            elements.storytellerInput.value = '';
+
+            // Reset to first mode
+            elements.modeBtns[0].click();
+        });
+
+        // Initialize: Focus on oracle input
+        elements.oracleInput.focus();
+    </script>
+</body>
+</html>

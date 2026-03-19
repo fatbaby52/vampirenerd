@@ -1,0 +1,28 @@
+{
+  "name": "vtm-companion",
+  "version": "1.0.0",
+  "description": "Vampire: The Masquerade companion website with Netlify Functions backend",
+  "main": "index.js",
+  "scripts": {
+    "setup": "node scripts/setup-assistants.js",
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'",
+    "test": "echo 'No tests configured yet'"
+  },
+  "keywords": [
+    "vampire-masquerade",
+    "vtm",
+    "game-master",
+    "assistant",
+    "netlify",
+    "openai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
