@@ -893,10 +893,7 @@
             const message = elements.oracleInput.value.trim();
             if (!message || app.oracleLoading) return;
 
-            // Initialize thread on first message
-            if (!app.oracleThreadId) {
-                app.oracleThreadId = generateThreadId();
-            }
+            // Thread ID will be null on first message — backend creates it
 
             // Clear input and disable button
             elements.oracleInput.value = '';
@@ -1001,7 +998,7 @@
 
         // Storyteller: Begin session
         elements.beginSessionBtn.addEventListener('click', () => {
-            app.storytellerThreadId = generateThreadId();
+            app.storytellerThreadId = null; // Backend creates thread on first message
             app.gameActive = true;
             app.storytellerMessages = [];
 
