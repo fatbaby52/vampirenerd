@@ -1,15 +1,19 @@
 /**
  * Netlify Function: Storyteller/DM Mode
  *
- * Handles storytelling and game master assistance for Vampire: The Masquerade.
+ * Storytelling and game-master assistance for Vampire: The Masquerade.
  * Supports two modes:
- * - ai_storyteller: AI runs the full game
- * - st_assist: AI assists a human Storyteller
+ * - ai_storyteller: the AI runs the full game
+ * - st_assist: the AI assists a human Storyteller
+ *
+ * Migrated from the OpenAI Assistants API (sunset Aug 26, 2026) to the
+ * OpenAI Responses API. Same request/response contract, so the front-end
+ * needs no changes. Continuity is handled by chaining `previous_response_id`.
  *
  * Expected POST body:
  * {
  *   message: string,
- *   threadId?: string,
+ *   threadId?: string,                          // prior response id
  *   mode: "ai_storyteller" | "st_assist",
  *   playerCount?: number,
  *   sessionLength?: string,
@@ -26,32 +30,56 @@
  */
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ASSISTANT_ID = process.env.OPENAI_ST_ASSISTANT_ID;
 const API_BASE = 'https://api.openai.com/v1';
-const OPENAI_BETA = 'assistants=v2';
+const MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
 
-// Polling configuration
-const MAX_WAIT_MS = 30000; // 30 second timeout
-const POLL_INTERVAL_MS = 500; // Check every 500ms
+const INSTRUCTIONS = `You are an expert Storyteller for Vampire: The Masquerade (Revised Edition). You support two distinct modes:
+
+**AI Storyteller Mode:** You run the full game. Set scenes, describe environments, play all NPCs with distinct personalities, and narrate outcomes. Ask players for their actions, then resolve them using the game's rules. Track the narrative, manage tension, and create memorable moments. When starting, ask about:
+- Character details (names, clans, concepts)
+- Setting and time period
+- Tone (gritty, gothic, intrigue, horror, etc.)
+- Any specific story hooks or themes
+
+**Storyteller Assistant Mode:** You help a human Storyteller run their game. Your role is to:
+- Suggest encounter ideas and plot hooks
+- Generate NPC stats, backgrounds, and personalities
+- Look up rules on the fly and help clarify mechanics
+- Help with pacing and suggest when to escalate tension
+- Brainstorm solutions to player dilemmas
+- Manage encounter difficulty and balance
+
+In both modes:
+- Use your knowledge of the published Revised Edition rules as your authoritative reference for mechanics, clans, disciplines, and lore
+- Maintain the gothic atmosphere of VTM
+- Encourage dramatic roleplay and character development
+- Balance challenge with fun
+- Remember important narrative details and character developments
+- Be collaborative and responsive to player agency
+
+The current mode and any session parameters are provided at the start of each user message in a bracketed header.`;
 
 /**
- * Helper: Make authenticated requests to OpenAI API
+ * Call the OpenAI Responses API.
  */
-async function openaiRequest(method, endpoint, body = null) {
-  const options = {
-    method,
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'OpenAI-Beta': OPENAI_BETA,
-      'Content-Type': 'application/json',
-    },
+async function createResponse({ input, previousResponseId }) {
+  const body = {
+    model: MODEL,
+    instructions: INSTRUCTIONS,
+    input,
   };
-
-  if (body) {
-    options.body = JSON.stringify(body);
+  if (previousResponseId) {
+    body.previous_response_id = previousResponseId;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, options);
+  const response = await fetch(`${API_BASE}/responses`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -64,84 +92,27 @@ async function openaiRequest(method, endpoint, body = null) {
 }
 
 /**
- * Create a new conversation thread
+ * Extract the assistant's text from a Responses API result.
  */
-async function createThread() {
-  const data = await openaiRequest('POST', '/threads');
-  return data.id;
-}
-
-/**
- * Add a message to a thread
- */
-async function addMessage(threadId, message) {
-  await openaiRequest('POST', `/threads/${threadId}/messages`, {
-    role: 'user',
-    content: message,
-  });
-}
-
-/**
- * Start a run on the assistant
- */
-async function createRun(threadId) {
-  const data = await openaiRequest('POST', `/threads/${threadId}/runs`, {
-    assistant_id: ASSISTANT_ID,
-  });
-  return data.id;
-}
-
-/**
- * Poll for run completion
- */
-async function pollRunCompletion(threadId, runId) {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < MAX_WAIT_MS) {
-    const data = await openaiRequest('GET', `/threads/${threadId}/runs/${runId}`);
-
-    if (data.status === 'completed') {
-      return true;
+function extractText(data) {
+  if (data && typeof data.output_text === 'string' && data.output_text.length > 0) {
+    return data.output_text;
+  }
+  const parts = [];
+  const output = (data && data.output) || [];
+  for (const item of output) {
+    if (item && item.type === 'message' && Array.isArray(item.content)) {
+      for (const block of item.content) {
+        if (block && (block.type === 'output_text' || block.type === 'text') && typeof block.text === 'string') {
+          parts.push(block.text);
+        }
+      }
     }
-
-    if (data.status === 'failed' || data.status === 'cancelled') {
-      throw new Error(`Run ${data.status}: ${data.last_error?.message || 'Unknown error'}`);
-    }
-
-    // Still running, wait before next check
-    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
   }
-
-  throw new Error(`Run polling timeout after ${MAX_WAIT_MS}ms`);
+  return parts.join('').trim();
 }
 
-/**
- * Retrieve the assistant's response messages
- */
-async function getMessages(threadId) {
-  const data = await openaiRequest('GET', `/threads/${threadId}/messages?limit=1&order=desc`);
-
-  if (!data.data || data.data.length === 0) {
-    throw new Error('No messages returned from assistant');
-  }
-
-  // Extract text content from the first message
-  const message = data.data[0];
-  const textContent = message.content.find(block => block.type === 'text');
-
-  if (!textContent) {
-    throw new Error('Assistant response contains no text');
-  }
-
-  // Assistants API v2 returns text as { value: string, annotations: [...] }
-  return typeof textContent.text === 'string' ? textContent.text : textContent.text.value;
-}
-
-/**
- * Main handler
- */
 exports.handler = async (event) => {
-  // CORS headers
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
@@ -149,48 +120,28 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 
-  // Handle preflight
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: '',
-    };
+    return { statusCode: 200, headers, body: '' };
   }
 
-  // Only allow POST
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
+    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
-    // Validate configuration
     if (!OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY environment variable not set');
     }
-    if (!ASSISTANT_ID) {
-      throw new Error('OPENAI_ST_ASSISTANT_ID environment variable not set');
-    }
 
-    // Parse request body
     let body;
     try {
       body = JSON.parse(event.body);
     } catch (e) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Invalid JSON body' }),
-      };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
     }
 
     const { message, threadId, mode, playerCount, sessionLength, scenario } = body;
 
-    // Validate required fields
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return {
         statusCode: 400,
@@ -207,54 +158,45 @@ exports.handler = async (event) => {
       };
     }
 
-    // Create thread if needed
-    let finalThreadId = threadId;
-    if (!finalThreadId) {
-      finalThreadId = await createThread();
-    }
-
-    // Build context message if session parameters provided
-    let fullMessage = message.trim();
     const contextParts = [];
-
     if (mode === 'ai_storyteller') {
-      contextParts.push(`[MODE: AI STORYTELLER]`);
+      contextParts.push('[MODE: AI STORYTELLER]');
       if (playerCount) contextParts.push(`Player count: ${playerCount}`);
       if (sessionLength) contextParts.push(`Session length: ${sessionLength}`);
       if (scenario) contextParts.push(`Scenario: ${scenario}`);
-    } else if (mode === 'st_assist') {
-      contextParts.push(`[MODE: STORYTELLER ASSISTANT]`);
+    } else {
+      contextParts.push('[MODE: STORYTELLER ASSISTANT]');
       if (playerCount) contextParts.push(`Players: ${playerCount}`);
       if (sessionLength) contextParts.push(`Time: ${sessionLength}`);
       if (scenario) contextParts.push(`Context: ${scenario}`);
     }
 
+    let fullMessage = message.trim();
     if (contextParts.length > 0) {
       fullMessage = `${contextParts.join('\n')}\n\n${fullMessage}`;
     }
 
-    // Add user message
-    await addMessage(finalThreadId, fullMessage);
+    const data = await createResponse({
+      input: fullMessage,
+      previousResponseId: threadId || null,
+    });
 
-    // Create and poll run
-    const runId = await createRun(finalThreadId);
-    await pollRunCompletion(finalThreadId, runId);
-
-    // Get assistant response
-    const response = await getMessages(finalThreadId);
+    const response = extractText(data);
+    if (!response) {
+      throw new Error('Model returned no text');
+    }
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        threadId: finalThreadId,
+        threadId: data.id,
         response,
       }),
     };
   } catch (error) {
     console.error('Storyteller function error:', error);
-
     return {
       statusCode: 500,
       headers,
