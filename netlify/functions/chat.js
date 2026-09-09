@@ -2,50 +2,61 @@
  * Netlify Function: Rules Q&A Chat
  *
  * Handles chat requests for Vampire: The Masquerade rules questions.
- * Uses OpenAI Assistants API (v2) to provide accurate game knowledge.
+ *
+ * Migrated from the OpenAI Assistants API (sunset Aug 26, 2026) to the
+ * OpenAI Responses API. Same request/response contract as before, so the
+ * front-end needs no changes. Conversation continuity is handled by chaining
+ * `previous_response_id` — the client keeps passing back the `threadId` we return.
  *
  * Expected POST body:
  * {
  *   message: string,      // User's question
- *   threadId?: string     // Existing thread ID (optional, creates new if omitted)
+ *   threadId?: string     // Prior response id (optional; omit to start fresh)
  * }
  *
  * Returns:
  * {
  *   success: boolean,
- *   threadId: string,
+ *   threadId: string,     // response id to send back on the next turn
  *   response: string,
  *   error?: string
  * }
  */
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID;
 const API_BASE = 'https://api.openai.com/v1';
-const OPENAI_BETA = 'assistants=v2';
+const MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
 
-// Polling configuration
-const MAX_WAIT_MS = 30000; // 30 second timeout
-const POLL_INTERVAL_MS = 500; // Check every 500ms
+const INSTRUCTIONS = `You are an expert on Vampire: The Masquerade (Revised Edition). Answer questions about game rules, lore, clans, disciplines, and mechanics as accurately as possible, drawing on your knowledge of the published Revised Edition rulebooks. Be accurate, cite specific rules when you can, and explain concepts clearly. If something isn't covered by the published rules or you are unsure, say so rather than inventing a rule.
+
+When answering:
+- Ground your answers in the published Revised Edition rules
+- Cite the specific book, chapter, or section when referencing rules
+- Explain mechanics in clear, understandable terms
+- If there's ambiguity, explain the multiple interpretations
+- Be friendly and encouraging to new and experienced players alike`;
 
 /**
- * Helper: Make authenticated requests to OpenAI API
+ * Call the OpenAI Responses API.
  */
-async function openaiRequest(method, endpoint, body = null) {
-  const options = {
-    method,
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'OpenAI-Beta': OPENAI_BETA,
-      'Content-Type': 'application/json',
-    },
+async function createResponse({ input, previousResponseId }) {
+  const body = {
+    model: MODEL,
+    instructions: INSTRUCTIONS,
+    input,
   };
-
-  if (body) {
-    options.body = JSON.stringify(body);
+  if (previousResponseId) {
+    body.previous_response_id = previousResponseId;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, options);
+  const response = await fetch(`${API_BASE}/responses`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -58,84 +69,27 @@ async function openaiRequest(method, endpoint, body = null) {
 }
 
 /**
- * Create a new conversation thread
+ * Extract the assistant's text from a Responses API result.
  */
-async function createThread() {
-  const data = await openaiRequest('POST', '/threads');
-  return data.id;
-}
-
-/**
- * Add a message to a thread
- */
-async function addMessage(threadId, message) {
-  await openaiRequest('POST', `/threads/${threadId}/messages`, {
-    role: 'user',
-    content: message,
-  });
-}
-
-/**
- * Start a run on the assistant
- */
-async function createRun(threadId) {
-  const data = await openaiRequest('POST', `/threads/${threadId}/runs`, {
-    assistant_id: ASSISTANT_ID,
-  });
-  return data.id;
-}
-
-/**
- * Poll for run completion
- */
-async function pollRunCompletion(threadId, runId) {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < MAX_WAIT_MS) {
-    const data = await openaiRequest('GET', `/threads/${threadId}/runs/${runId}`);
-
-    if (data.status === 'completed') {
-      return true;
+function extractText(data) {
+  if (data && typeof data.output_text === 'string' && data.output_text.length > 0) {
+    return data.output_text;
+  }
+  const parts = [];
+  const output = (data && data.output) || [];
+  for (const item of output) {
+    if (item && item.type === 'message' && Array.isArray(item.content)) {
+      for (const block of item.content) {
+        if (block && (block.type === 'output_text' || block.type === 'text') && typeof block.text === 'string') {
+          parts.push(block.text);
+        }
+      }
     }
-
-    if (data.status === 'failed' || data.status === 'cancelled') {
-      throw new Error(`Run ${data.status}: ${data.last_error?.message || 'Unknown error'}`);
-    }
-
-    // Still running, wait before next check
-    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
   }
-
-  throw new Error(`Run polling timeout after ${MAX_WAIT_MS}ms`);
+  return parts.join('').trim();
 }
 
-/**
- * Retrieve the assistant's response messages
- */
-async function getMessages(threadId) {
-  const data = await openaiRequest('GET', `/threads/${threadId}/messages?limit=1&order=desc`);
-
-  if (!data.data || data.data.length === 0) {
-    throw new Error('No messages returned from assistant');
-  }
-
-  // Extract text content from the first message
-  const message = data.data[0];
-  const textContent = message.content.find(block => block.type === 'text');
-
-  if (!textContent) {
-    throw new Error('Assistant response contains no text');
-  }
-
-  // Assistants API v2 returns text as { value: string, annotations: [...] }
-  return typeof textContent.text === 'string' ? textContent.text : textContent.text.value;
-}
-
-/**
- * Main handler
- */
 exports.handler = async (event) => {
-  // CORS headers
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
@@ -143,43 +97,24 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 
-  // Handle preflight
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: '',
-    };
+    return { statusCode: 200, headers, body: '' };
   }
 
-  // Only allow POST
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
+    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
-    // Validate configuration
     if (!OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY environment variable not set');
     }
-    if (!ASSISTANT_ID) {
-      throw new Error('OPENAI_ASSISTANT_ID environment variable not set');
-    }
 
-    // Parse request body
     let body;
     try {
       body = JSON.parse(event.body);
     } catch (e) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Invalid JSON body' }),
-      };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
     }
 
     const { message, threadId } = body;
@@ -192,34 +127,27 @@ exports.handler = async (event) => {
       };
     }
 
-    // Create thread if needed
-    let finalThreadId = threadId;
-    if (!finalThreadId) {
-      finalThreadId = await createThread();
+    const data = await createResponse({
+      input: message.trim(),
+      previousResponseId: threadId || null,
+    });
+
+    const response = extractText(data);
+    if (!response) {
+      throw new Error('Model returned no text');
     }
-
-    // Add user message
-    await addMessage(finalThreadId, message.trim());
-
-    // Create and poll run
-    const runId = await createRun(finalThreadId);
-    await pollRunCompletion(finalThreadId, runId);
-
-    // Get assistant response
-    const response = await getMessages(finalThreadId);
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        threadId: finalThreadId,
+        threadId: data.id,
         response,
       }),
     };
   } catch (error) {
     console.error('Chat function error:', error);
-
     return {
       statusCode: 500,
       headers,
